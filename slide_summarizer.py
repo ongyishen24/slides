@@ -11,7 +11,7 @@ from googleapiclient.errors import HttpError
 SCOPES = ["https://www.googleapis.com/auth/presentations.readonly"]
 
 # The ID of a sample presentation.
-PRESENTATION_ID = "1hqroUnCm9iuTxPIeFTVxMCXPAjHZ9C6FXlIf4oMvww0"
+PRESENTATION_ID = os.getenv("PRESENTATION_ID")
 
 
 def main():
