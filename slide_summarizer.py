@@ -44,6 +44,8 @@ def main():
         )
 
         slides = presentation.get("slides")
+
+        # Pick which slides you want to summarize by slicing it, or just pass in all the slides
         slide_text = parse_presentation(slides[4:9])
 
         openai.api_key = os.getenv("OPENAI_API_KEY")
