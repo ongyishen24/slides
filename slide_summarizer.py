@@ -15,9 +15,7 @@ PRESENTATION_ID = os.getenv("PRESENTATION_ID")
 
 
 def main():
-    """Shows basic usage of the Slides API.
-    Prints the number of slides and elements in a sample presentation.
-    """
+    """Shows basic usage of the Slides API and OpenAI API."""
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -50,6 +48,7 @@ def main():
 
         openai.api_key = os.getenv("OPENAI_API_KEY")
 
+        # System messages are used for prompting
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -58,8 +57,14 @@ def main():
             ],
         )
 
-        print("Slide text: " + slide_text)
-        print("OPENAI summary: " + response.choices[0]["message"]["content"])
+        print("Slide text:")
+        print(slide_text)
+        print("\n-----------------------------------------------------------\n")
+        print("OPENAI summary:")
+        print(response.choices[0].message.content)
+        print("\n-----------------------------------------------------------\n")
+        print("Usage: ")
+        print(response.usage)
 
     except HttpError as err:
         print(err)
