@@ -1,52 +1,51 @@
+import argparse
 import os
 
 import openai
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+from pptx import Presentation
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/presentations.readonly"]
 
 # The ID of a sample presentation.
-PRESENTATION_ID = os.getenv("PRESENTATION_ID")
+# PRESENTATION_ID = os.getenv("PRESENTATION_ID")
 
 
 def main():
-    """Shows basic usage of the Slides API and OpenAI API."""
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
-
     try:
-        service = build("slides", "v1", credentials=creds)
-
-        # Call the Slides API
-        presentation = (
-            service.presentations().get(presentationId=PRESENTATION_ID).execute()
+        parser = argparse.ArgumentParser(
+            description="ChatGPT pptx summarizer",
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
+        parser.add_argument("src", help="Source pptx file")
+        parser.add_argument("dest", help="Destination txt file")
+        parser.add_argument(
+            "-s",
+            "--select",
+            nargs=2,
+            type=int,
+            help="Select start and end slides (Inclusive)",
+        )
+        parser.add_argument("-k", "--key", help="Own OpenAI API key")
+        args = vars(parser.parse_args())
+        prs = Presentation(args["src"])
+        start = 0
+        end = len(prs.slides)
+        if args["select"] != None:
+            start = args["select"][0] - 1
+            end = args["select"][1]
 
-        slides = presentation.get("slides")
+        slide_text = ""
+        slide_list = [slide for slide in prs.slides]
+        for i, slide in enumerate(slide_list[start:end]):
+            slide_text += "\nSlide " + str(i + 1) + "\n"
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    slide_text += shape.text + "\n"
+        openai.api_key = "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"
 
-        # Pick which slides you want to summarize by slicing it, or just pass in all the slides
-        slide_text = parse_presentation(slides[4:9])
-
-        openai.api_key = os.getenv("OPENAI_API_KEY")
+        if args["key"] != None:
+            openai.api_key = args["key"]
 
         # System messages are used for prompting
         response = openai.ChatCompletion.create(
@@ -66,26 +65,12 @@ def main():
         print("Usage: ")
         print(response.usage)
 
-    except HttpError as err:
+        text_file = open(args["dest"], "w")
+        text_file.write(response.choices[0].message.content)
+        text_file.close()
+
+    except Exception as err:
         print(err)
-
-
-def parse_presentation(slides: list) -> str:
-    """Returns the text from a list of slides"""
-    text_combined = ""
-
-    for slide in slides:
-        pageElements = slide.get("pageElements")
-        for element in pageElements:
-            if element.get("shape") is not None:
-                text = element.get("shape").get("text")
-                if text is not None:
-                    for textElement in text.get("textElements"):
-                        if textElement is not None:
-                            textRun = textElement.get("textRun")
-                            if textRun is not None:
-                                text_combined += textRun.get("content")
-    return text_combined
 
 
 if __name__ == "__main__":
