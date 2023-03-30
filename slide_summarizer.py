@@ -42,7 +42,7 @@ def main():
             for shape in slide.shapes:
                 if hasattr(shape, "text"):
                     slide_text += shape.text + "\n"
-        openai.api_key = "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"
+        openai.api_key = ""
 
         if args["key"] != None:
             openai.api_key = args["key"]
